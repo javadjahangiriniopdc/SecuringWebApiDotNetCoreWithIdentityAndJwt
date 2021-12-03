@@ -20,7 +20,7 @@ namespace SecuringWebApiDotNetCoreWithIdentityAndJwt.Areas.Identity
                     options.UseSqlServer(
                         context.Configuration.GetConnectionString("SecuringWebApiDotNetCoreWithIdentityAndJwtContextConnection")));
 
-                services.AddDefaultIdentity<SecuringWebApiDotNetCoreWithIdentityAndJwtUser>(options => options.SignIn.RequireConfirmedAccount = true)
+                services.AddDefaultIdentity<SecuringWebApiDotNetCoreWithIdentityAndJwtUser>(options => options.SignIn.RequireConfirmedAccount = false)
                     .AddEntityFrameworkStores<SecuringWebApiDotNetCoreWithIdentityAndJwtContext>();
             });
         }

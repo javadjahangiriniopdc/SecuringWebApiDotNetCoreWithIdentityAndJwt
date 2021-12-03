@@ -54,7 +54,7 @@ namespace SecuringWebApiDotNetCoreWithIdentityAndJwt.Controllers
         public async Task<ActionResult> GetToken([FromBody] MyLoginModelType myLoginModelType)
         {
             var user = _dbContext.Users.FirstOrDefault(x => x.Email == myLoginModelType.Email);
-            if (user == null)
+            if (user != null)
             {
                 var singInResult = await _signInManager.CheckPasswordSignInAsync(user,myLoginModelType.Password,false);
                 if (singInResult.Succeeded)
@@ -84,5 +84,33 @@ namespace SecuringWebApiDotNetCoreWithIdentityAndJwt.Controllers
             return Ok("failed , try again");
 
         }
+
+        [AllowAnonymous]
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] MyLoginModelType myLoginModelType)
+        {
+            SecuringWebApiDotNetCoreWithIdentityAndJwtUser securingWebApiDotNetCoreWithIdentity = new SecuringWebApiDotNetCoreWithIdentityAndJwtUser()
+            {
+                Email = myLoginModelType.Email,
+                UserName = myLoginModelType.Email,
+                EmailConfirmed = false,
+            };
+
+            var result = await _userManager.CreateAsync(securingWebApiDotNetCoreWithIdentity,myLoginModelType.Password);
+            if (result.Succeeded)
+            {
+                return Ok(new { result = "Register Success" });
+            }
+            else
+            {
+                StringBuilder sb = new StringBuilder();
+                foreach (var error in result.Errors)
+                {
+                    sb.Append(error.Description);
+                }
+                return Ok(new { Result = $"Register Fail: {sb.ToString()}" });
+            }
+        }
+
     }
 }
