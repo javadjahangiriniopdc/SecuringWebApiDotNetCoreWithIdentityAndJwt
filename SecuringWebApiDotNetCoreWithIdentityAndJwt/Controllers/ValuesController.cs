@@ -1,22 +1,40 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using SecuringWebApiDotNetCoreWithIdentityAndJwt.Areas.Identity.Data;
+using SecuringWebApiDotNetCoreWithIdentityAndJwt.Data;
 using SecuringWebApiDotNetCoreWithIdentityAndJwt.Models;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace SecuringWebApiDotNetCoreWithIdentityAndJwt.Controllers
 {
+   
+    
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
     public class ValuesController : ControllerBase
     {
+
+        private readonly SecuringWebApiDotNetCoreWithIdentityAndJwtContext _dbContext;
+        private readonly UserManager<SecuringWebApiDotNetCoreWithIdentityAndJwtUser> _userManager;
+        private readonly SignInManager<SecuringWebApiDotNetCoreWithIdentityAndJwtUser> _signInManager;
+
+        public ValuesController(SecuringWebApiDotNetCoreWithIdentityAndJwtContext dbContext, UserManager<SecuringWebApiDotNetCoreWithIdentityAndJwtUser> userManager, SignInManager<SecuringWebApiDotNetCoreWithIdentityAndJwtUser> signInManager)
+        {
+            _dbContext = dbContext;
+            _userManager = userManager;
+            _signInManager = signInManager;
+        }
+
         [HttpGet("getFruits")]
         [AllowAnonymous]
         public ActionResult GetFruits()
@@ -35,28 +53,35 @@ namespace SecuringWebApiDotNetCoreWithIdentityAndJwt.Controllers
         [HttpPost("getToken")]
         public async Task<ActionResult> GetToken([FromBody] MyLoginModelType myLoginModelType)
         {
-            if (myLoginModelType.Email == "javad.jahangiri.niopdc@gmail.com" && myLoginModelType.Password=="Pa$sw0rd")
+            var user = _dbContext.Users.FirstOrDefault(x => x.Email == myLoginModelType.Email);
+            if (user == null)
             {
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var key= Encoding.ASCII.GetBytes("@#MY_BIG_SECRET_KEY@#");
-                var tokenDescription = new SecurityTokenDescriptor
+                var singInResult = await _signInManager.CheckPasswordSignInAsync(user,myLoginModelType.Password,false);
+                if (singInResult.Succeeded)
                 {
-                    Subject = new ClaimsIdentity(new Claim[]
+                    var tokenHandler = new JwtSecurityTokenHandler();
+                    var key = Encoding.ASCII.GetBytes("@#MY_BIG_SECRET_KEY@#");
+                    var tokenDescription = new SecurityTokenDescriptor
                     {
+                        Subject = new ClaimsIdentity(new Claim[]
+                        {
                         new Claim(ClaimTypes.Name, myLoginModelType.Email)
-                    }
-                   ),
-                    Expires = DateTime.UtcNow.AddDays(1),
-                    SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
-                };
-            var token = tokenHandler.CreateToken(tokenDescription);
-            var tokenString = tokenHandler.WriteToken(token);
-            return  Ok(new { token = tokenString } );
+                        }
+                       ),
+                        Expires = DateTime.UtcNow.AddDays(1),
+                        SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
+                    };
+                    var token = tokenHandler.CreateToken(tokenDescription);
+                    var tokenString = tokenHandler.WriteToken(token);
+                    return Ok(new { token = tokenString });
+                }
+                else
+                {
+                    return Ok("failed , try again");
+                }
             }
-            else
-            {
-                return Unauthorized("try again");
-            }
+
+            return Ok("failed , try again");
 
         }
     }
