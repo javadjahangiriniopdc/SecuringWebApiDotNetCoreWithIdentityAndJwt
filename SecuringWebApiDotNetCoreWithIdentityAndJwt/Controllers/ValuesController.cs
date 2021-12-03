@@ -51,7 +51,7 @@ namespace SecuringWebApiDotNetCoreWithIdentityAndJwt.Controllers
                 };
             var token = tokenHandler.CreateToken(tokenDescription);
             var tokenString = tokenHandler.WriteToken(token);
-            return Ok(new { token = tokenString } );
+            return  Ok(new { token = tokenString } );
             }
             else
             {
